@@ -5,6 +5,8 @@
 #include <math.h>
 #include <time.h>
 
+#include "Nqueens.h"
+
 #define MAXQ 100
 
 #define FALSE 0
@@ -179,11 +181,11 @@ void randomSearch() {
 
 void hillClimbing() {
 	int min=evaluateState();
-	int x,y,z,change;
+	int x,y,z,i,j,change;
 	while(change!=0){
 		change=0;
-		for(int i=0;i<nqueens;i++){
-			for(int j=0;j<nqueens;j++){
+		for( i=0;i<nqueens;i++){
+			for( j=0;j<nqueens;j++){
 				if(canMoveTo(i,j)){
 					z=queens[i];
 					queens[i]=j;
@@ -207,9 +209,178 @@ void hillClimbing() {
 /*************************************************************/
 
 void simulatedAnnealing() {
+
 	printf("Implement the routine simulatedAnnealing() yourself!!\n");
 }
+/***************************************************************/
 
+int inConflictWithAnotherQueen2(int *pop,int row, int col) {
+	int queen;
+	for (queen = 0; queen < nqueens; queen++) {
+		if (inConflict(row, col, queen, pop[queen])) {
+			if ((row != queen) || (col != pop[queen])) return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void printState2(int *population) {
+	int row, column;
+	printf("\n");
+	for (row = 0; row < nqueens; row++) {
+		for (column = 0; column < nqueens; column++) {
+			if (population[row] != column) {
+				printf(".");
+			}
+			else {
+				if (inConflictWithAnotherQueen2(population,row, column)) {
+					printf("Q");
+				}
+				else {
+					printf("q");
+				}
+			}
+		}
+		printf("\n");
+	}
+}
+
+
+void initiateQueens2(int flag,int **pop) {
+	int q;
+	for (q = 0; q < nqueens; q++) {
+		*pop[q] = (flag == 0 ? 0 : random() % nqueens);
+	}
+}
+
+int countConflicts2(int *pop) {
+	int cnt = 0;
+	int queen, other;
+	for (queen = 0; queen < nqueens; queen++) {
+		for (other = queen + 1; other < nqueens; other++) {
+			if (inConflict(queen, pop[queen], other, pop[other])) {
+				cnt++;
+			}
+		}
+	}
+	return cnt;
+}
+
+ void selection(Pop *best,Pop *arr){
+	best[0].fitness=999999;
+	best[1].fitness=999999;
+	int i;
+	for(i=0;i<nqueens;i++){
+		if(arr[i].fitness<best[0].fitness){
+			best[0]=arr[i];
+			//printf(" fitness 0: %d		fitness 1: %d\n",  best[0].fitness,best[1].fitness);
+		}
+	}
+	for(i=0;i<nqueens;i++){
+		//printf(" fitness 0: %d		fitness 1: %d\n",  best[0].fitness, best[1].fitness);
+		if(arr[i].fitness<best[1].fitness&&arr[i].fitness>=best[0].fitness){
+			best[1]=arr[i];
+		}
+		
+	}
+}
+
+Pop reproduce(Pop *arr){
+	Pop child;
+	initializeRandomGenerator();
+	int rand =3;
+
+	int i;
+	for(i=0;i<rand;i++){
+	
+		child.arr[i]=arr[0].arr[i];
+	}
+	for(i=rand;i<nqueens;i++){
+		child.arr[i]=arr[1].arr[i];
+	}
+	child.fitness=countConflicts(child.arr);
+	//printf(" %d",child.fitness);
+	printState2(child.arr);
+	return child;
+}
+
+Pop mutate(Pop child){
+	int rand=random()%nqueens;
+	int value=(random()%nqueens);
+	child.arr[rand]=value;
+	child.fitness=countConflicts(child.arr);
+	return child;
+}
+int findBest(Pop *arr){
+	int i,best=999999999;
+	for (i=0;i<nqueens;i++){
+		if(arr[i].fitness<best){
+			best=arr[i].fitness;
+		}
+	}
+	return best;
+}
+/*int *copy(int *arr){
+	int i,*arr2;
+	for(i=0;i<nqueens;i++){
+		arr2[i]=arr[i];
+	}
+	return arr2;
+}*/
+void geneticAlgorithm(){
+		printf(" 1");
+		Pop population[nqueens];
+		int i,j,iter=0,rand,best=999999999;
+		
+		initializeRandomGenerator();
+		
+		for(i=0;i<nqueens;i++){
+			//initializeRandomGenerator();
+			initiateQueens(1);
+			population[i].fitness=countConflicts();
+			for(j=0;j<nqueens;j++){
+			population[i].arr[j]=queens[j];
+			}
+		}
+			
+			
+		
+		
+		while(best!=0&&iter!=MAXITER){
+			
+			//printf("best  %d\n",best	);		
+			Pop new[nqueens];
+			for(i=0;i<nqueens;i++){
+				iter++;
+				Pop x[2];
+				selection(x,population);
+				Pop child = reproduce(x);
+				rand=random()%nqueens;
+				if(rand ==nqueens/4){
+					child=mutate(child);
+				}
+				printState2(child.arr);
+				new[i]=child;
+			}
+			best=findBest(new);
+			for(i=0;i<nqueens;i++){
+				population[i]=new[i];
+			}
+		}
+		for(i=0;i<nqueens;i++){
+			if(population[i].fitness==best){
+				printState2(population[i].arr);
+				return;
+			}
+		
+	}
+	//printState2(population[i].arr);
+	return;
+}
+
+
+
+/**************************************************************/
 
 int main(int argc, char *argv[]) {
 	int algorithm;
@@ -221,9 +392,9 @@ int main(int argc, char *argv[]) {
 
 	do {
 		printf("Algorithm: (1) Random search  (2) Hill climbing  ");
-		printf("(3) Simulated Annealing: ");
+		printf("(3) Simulated Annealing       (4) Genetic Algorithm ");
 		scanf("%d", &algorithm);
-	} while ((algorithm < 1) || (algorithm > 3));
+	} while ((algorithm < 1) || (algorithm > 4));
 
 	initializeRandomGenerator();
 
@@ -236,8 +407,10 @@ int main(int argc, char *argv[]) {
 	case 1: randomSearch();       break;
 	case 2: hillClimbing();       break;
 	case 3: simulatedAnnealing(); break;
+	case 4: geneticAlgorithm();	  break;
 	}
 	printf("evaluation: %d",evaluateState());
 
 	return 0;
-}
+};
+
